@@ -81,19 +81,19 @@ def move_player(hero, movement):
         if y > 0 and level_map[y - 1, x] == '.':
             hero.move(x, y - 1)
     elif movement == 'down':
-        if y < level_y - 1 and level_map[y + 1, x] == '.':
+        if y < level_y and level_map[y + 1, x] == '.':
             hero.move(x, y + 1)
     elif movement == 'left':
         if x > 0 and level_map[y, x - 1] == '.':
             hero.move(x - 1, y)
     elif movement == 'right':
-        if x < level_x - 1 and level_map[y, x + 1] == '.':
+        if x < level_x and level_map[y, x + 1] == '.':
             hero.move(x + 1, y)
 
 
 if __name__ == '__main__':
     pg.init()
-    size = width, height = 550, 550
+    size = width, height = 1100, 750
     screen = pg.display.set_mode((size))
     player_image = load_image('chicken.png')
     tile_images = {
@@ -113,6 +113,11 @@ if __name__ == '__main__':
     pg.key.set_repeat(200, 70)
     player, level_x, level_y = generate_level(level_map)
 
+    start_menu = True
+    screen.fill(pg.Color('White'))
+    instructions_text = pg.font.Font(None, 48).render("Press SPACE to start", True, pg.Color('Black'))
+    instructions_rect = instructions_text.get_rect(center=(width // 2, height // 2))
+
     running = True
     while running:
         for event in pg.event.get():
@@ -121,7 +126,6 @@ if __name__ == '__main__':
 
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
-                    screen.fill(pg.Color('Black'))
                     start_menu = False
                 elif event.key == pg.K_UP:
                     move_player(player, 'up')
@@ -131,12 +135,14 @@ if __name__ == '__main__':
                     move_player(player, 'left')
                 elif event.key == pg.K_RIGHT:
                     move_player(player, 'right')
-            tiles_group.draw(screen)
-            player_group.draw(screen)
-            pg.display.flip()
+
+            if not start_menu:
+                tiles_group.draw(screen)
+                player_group.draw(screen)
+            elif start_menu:
+                screen.blit(instructions_text, instructions_rect)
             time.Clock().tick(fps)
             pg.display.flip()
 
         time.Clock().tick(fps)
-
 
