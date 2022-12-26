@@ -93,7 +93,7 @@ def move_player(hero, movement):
 
 if __name__ == '__main__':
     pg.init()
-    size = width, height = 1100, 750
+    size = width, height = 550, 550
     screen = pg.display.set_mode((size))
     player_image = load_image('chicken.png')
     tile_images = {
