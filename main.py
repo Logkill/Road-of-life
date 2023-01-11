@@ -69,10 +69,31 @@ class Tile(pg.sprite.Sprite):
         )
 
 
-def start():
-    start_menu = True
-    if start_menu:
-        screen.blit(instructions_text, instructions_rect)
+def start_screen():
+    """Вывод заставки игры"""
+    intro_text = ["Лучший результат: "]
+    # Выводим изображение заставки:
+    start_screen_background = load_image('start.jpg')
+    screen.blit(start_screen_background, (0, 0))
+    # Выводим текст заставки:
+    font = pg.font.Font(None, 40)
+    text_coord = 420
+    for line in intro_text:
+        string_rendered = font.render(line, True, pg.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 500
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+    # Главный игровой цикл для окна заставки:
+    while True:
+        for event_game in pg.event.get():
+            if event_game.type == pg.QUIT:
+                terminate()
+            elif event_game.type == pg.KEYDOWN or event_game.type == pg.MOUSEBUTTONDOWN:
+                return  # Начинаем игру
+        pg.display.flip()
 
 
 def move_player(hero, movement):
@@ -90,7 +111,16 @@ def move_player(hero, movement):
         if x < level_x and level_map[y, x + 1] == '.':
             hero.move(x + 1, y)
 
-
+            
+def terminate():
+    """Выход из игры"""
+    # Определяем отдельную функцию выхода из игры,
+    # чтобы ею можно было воспользоваться,
+    # как при закрытии игрового окна,
+    # так и заставки:
+    pg.quit()
+    sys.exit()
+    
 if __name__ == '__main__':
     pg.init()
     size = width, height = 1100, 750
@@ -113,10 +143,7 @@ if __name__ == '__main__':
     pg.key.set_repeat(200, 70)
     player, level_x, level_y = generate_level(level_map)
 
-    start_menu = True
-    screen.fill(pg.Color('White'))
-    instructions_text = pg.font.Font(None, 48).render("Press SPACE to start", True, pg.Color('Black'))
-    instructions_rect = instructions_text.get_rect(center=(width // 2, height // 2))
+    start_screen()
 
     running = True
     while running:
@@ -125,9 +152,7 @@ if __name__ == '__main__':
                 running = False
 
             elif event.type == pg.KEYDOWN:
-                if event.key == pg.K_SPACE:
-                    start_menu = False
-                elif event.key == pg.K_UP:
+                if event.key == pg.K_UP:
                     move_player(player, 'up')
                 elif event.key == pg.K_DOWN:
                     move_player(player, 'down')
@@ -136,11 +161,10 @@ if __name__ == '__main__':
                 elif event.key == pg.K_RIGHT:
                     move_player(player, 'right')
 
-            if not start_menu:
-                tiles_group.draw(screen)
-                player_group.draw(screen)
-            elif start_menu:
-                screen.blit(instructions_text, instructions_rect)
+            screen.fill(pg.Color('white'))
+            tiles_group.draw(screen)
+            player_group.draw(screen)
+            
             time.Clock().tick(fps)
             pg.display.flip()
 
