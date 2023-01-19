@@ -3,6 +3,8 @@ import numpy as np
 import pygame as pg
 from pygame import time
 
+import sys
+
 
 def load_image(name):
     filename = os.path.join('data', name)
@@ -32,10 +34,15 @@ class Player(pg.sprite.Sprite):
         )
 
     def move(self, x, y):
+
+        camera.dx -= tile_width * (x - self.pos[0])
+        camera.dy -= tile_height * (y - self.pos[1])
         self.pos = (x, y)
+        for tile in tiles_group:
+            camera.apply(tile)
         self.rect = self.image.get_rect().move(
             tile_width * self.pos[0] + 15,
-            tile_height * self.pos[1] + 5
+            tile_height * 6 + 5
         )
 
 
@@ -67,6 +74,9 @@ def generate_level(level):
             elif level[y, x] == '#':
                 Tile('road', x, y)
                 level[y, x] = '.'
+            elif level[y, x] == '0':
+                Tile('rir', x, y)
+                level[y, x] = '0'
             elif level[y, x] == ',':
                 Tile('empty', x, y)
                 level[y, x] = ','
@@ -78,20 +88,35 @@ def generate_level(level):
     return mas, hero, x, y
 
 
+class Camera:
+    def __init__(self):
+        self.dx, self.dy = 0, 0
+
+    def apply(self, obj):
+        obj.rect.y = obj.abs_pos[1] + self.dy
+
+    def update(self):
+        self.dx, self.dy = 0, 0
+
+
 class Tile(pg.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group)
         self.image = tile_images[tile_type]
-        self.rect = self.image.get_rect().move(
-            tile_width * pos_x,
-            tile_height * pos_y
-        )
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+        self.abs_pos = (self.rect.x, self.rect.y)
 
 
-def start():
-    start_menu = True
-    if start_menu:
-        screen.blit(instructions_text, instructions_rect)
+def start_screen():
+    screen.fill(pg.Color('White'))
+    screen.blit(load_image('start.jpg'), (0, 0))
+    while True:
+        for event_game in pg.event.get():
+            if event_game.type == pg.QUIT:
+                terminate()
+            elif event_game.type == pg.KEYDOWN or event_game.type == pg.MOUSEBUTTONDOWN:
+                return
+        pg.display.flip()
 
 
 def move_player(hero, movement):
@@ -108,21 +133,24 @@ def move_player(hero, movement):
     elif movement == 'right':
         if x < level_x and level_map[y, x + 1] == '.' or (x < level_x and level_map[y, x + 1] == ','):
             hero.move(x + 1, y)
-    if level_map[y - 1, x] != '.':
-        screen.fill('white')
 
 
 def move_car(mas):
     x, y = mas.pos
     if (x < level_x and level_map[y, x + 1] == '.') or (x < level_x and level_map[y, x + 1] == ','):
         mas.move(x + 1, y)
-    if x >= level_x:
+    elif x < level_x and level_map[y, x + 1] == '0' or x >= level_x:
         mas.move(0, y)
+
+
+def terminate():
+    pg.quit()
+    sys.exit()
 
 
 if __name__ == '__main__':
     pg.init()
-    fps = 30
+    fps = 60
     size = width, height = 1100, 750
     screen = pg.display.set_mode(size)
 
@@ -130,6 +158,7 @@ if __name__ == '__main__':
     cars_image = load_image('car.png')
 
     tile_images = {
+        'rir': load_image('water.png'),
         'road': load_image('road.png'),
         'empty': load_image('trava.png')
     }
@@ -148,14 +177,12 @@ if __name__ == '__main__':
     pg.key.set_repeat(200, 70)
     m, player, level_x, level_y = generate_level(level_map)
 
+    camera = Camera()
     start_menu = True
-    screen.fill(pg.Color('White'))
-    instructions_text = pg.font.Font(None, 48).render("Press SPACE to start", True, pg.Color('Black'))
-    instructions_rect = instructions_text.get_rect(center=(width // 2, height // 2))
+    start_screen()
 
     running = True
     while running:
-        move_car(m)
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
@@ -175,11 +202,7 @@ if __name__ == '__main__':
                 tiles_group.draw(screen)
                 player_group.draw(screen)
                 cars_group.draw(screen)
-            elif start_menu:
-                screen.blit(instructions_text, instructions_rect)
-            time.Clock().tick(fps)
-            pg.display.flip()
-
 
         time.Clock().tick(fps)
+        pg.display.flip()
 
