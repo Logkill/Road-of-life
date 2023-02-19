@@ -180,13 +180,23 @@ if __name__ == '__main__':
     camera = Camera()
     start_menu = True
     start_screen()
-
+    
+    # загружаем музыку
+    pg.mixer.music.load("musik.mp3")
+    clock = pg.time.Clock()
+    # vol уровень громкости
+    vol = 1.0
+    flPause = False
     running = True
+    # запустим фоновую музыку с бесконечным повторением
+    pg.mixer.music.play(-1)
+
     while running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 running = False
-
+            # при нажатии клавиш стрелка вверх, вниз, вправо или лево
+            # вызывается функция move_player с параметром 'up', 'down', 'left' или 'right'
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     start_menu = False
@@ -198,6 +208,21 @@ if __name__ == '__main__':
                     move_player(player, 'left')
                 elif event.key == pg.K_RIGHT:
                     move_player(player, 'right')
+                # при нажатии на Pause Break музыка выключаетя или включается
+                # в зависимости от положения до этого
+                elif event.key == pg.K_PAUSE:
+                    flPause = not flPause
+                    if flPause:
+                        pg.mixer.music.pause()
+                    else:
+                        pg.mixer.music.unpause()
+                # при нажатии на F1 или F2 звук уменьшаетсяся и увеличивается
+                elif event.type == pg.K_F1:
+                    vol -= 1.0
+                    pg.mixer.music.set_volume(vol)
+                elif event.type == pg.K_F2:
+                    vol += 1.0
+                    pg.mixer.music.set_volume(vol)
             if not start_menu:
                 tiles_group.draw(screen)
                 player_group.draw(screen)
