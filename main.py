@@ -28,9 +28,6 @@ class Player(pg.sprite.Sprite):
         super().__init__(player_group)
         self.image = player_image
         self.pos = (pos_x, pos_y)
-        self.y_velocity = 0
-        self.bounce_height = 10
-        self.bounce_speed = 2
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 15,
             tile_height * pos_y + 5
@@ -49,12 +46,6 @@ class Player(pg.sprite.Sprite):
             tile_height * 6 + 5
         )
 
-    def update(self):
-        self.rect.move_ip(0, self.y_velocity)
-        if self.rect.bottom >= height - tile_height:
-            self.rect.bottom = height - tile_height
-            self.y_velocity = -self.bounce_height
-        self.y_velocity += self.bounce_speed
 
 #Недоделано
 class Car(pg.sprite.Sprite):
@@ -65,11 +56,14 @@ class Car(pg.sprite.Sprite):
         self.abs_pos = (self.rect.x, self.rect.y)
 
     def move(self, x, y):
-        self.pos = (x, y)
+        self.rect = self.image.get_rect().move(tile_width * x, tile_height * y)
+
+
 
 #Генерация уровня
 def generate_level(level):
-    mas, hero, x, y = None, None, None, None
+    hero, x, y = None, None, None
+    mas = []
     row, col = level.shape
     for y in range(row):
         for x in range(col):
@@ -78,20 +72,42 @@ def generate_level(level):
             elif level[y, x] == '#':
                 Tile('road', x, y)
                 level[y, x] = '.'
+            elif level[y, x] == '&':
+                Tile('nest', x, y)
+                level[y, x] = '&'
             elif level[y, x] == '0':
                 Tile('rir', x, y)
                 level[y, x] = '0'
             elif level[y, x] == ',':
                 Tile('empty', x, y)
                 level[y, x] = ','
-                mas = Car(x, y)
+                mas.append(Car(x, y))
             elif level[y, x] == '@':
                 Tile('empty', x, y)
                 level[y, x] = '.'
                 hero = Player(x, y)
     return mas, hero, x, y
 
+
+def score():
+    with open('data/data.txt', 'rt') as scores:
+        scores = scores.readline()
+        ms = int(scores.split()[1])
+    font = pg.font.Font(None, 36)
+    if player.pos[1] > ms:
+        with open('data/data.txt', 'wt') as write:
+            write.write(f'score {str(player.pos[1])}')
+        score = player.pos[1]
+    else:
+        score = ms
+    text = font.render(f'max score: {str(score)}', True, (255, 255, 255))
+    text_rect = text.get_rect()
+    text_rect.center = (100, 15)
+    screen.blit(text, text_rect)
+    pg.display.flip()
 # Камера
+
+
 class Camera:
     def __init__(self):
         self.dx, self.dy = 0, 0
@@ -110,6 +126,8 @@ class Tile(pg.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
         self.abs_pos = (self.rect.x, self.rect.y)
 
+
+
 # стартовый экран
 def start_screen():
     screen.fill(pg.Color('White'))
@@ -118,9 +136,9 @@ def start_screen():
         for event_game in pg.event.get():
             if event_game.type == pg.QUIT:
                 terminate()
-            elif event_game.type == pg.KEYDOWN or event_game.type == pg.MOUSEBUTTONDOWN:
-                return
+            return
         pg.display.flip()
+
 
 # Передвижение игрока
 def move_player(hero, movement):
@@ -128,44 +146,69 @@ def move_player(hero, movement):
     if movement == 'up':
         if y > 0 and level_map[y - 1, x] == '.':
             hero.move(x, y - 1)
+        elif y > 0 and level_map[y - 1, x] == '&':
+            win()
         else:
             death()
     elif movement == 'down':
         if y < level_y and level_map[y + 1, x] == '.':
             hero.move(x, y + 1)
+        elif y < level_y and level_map[y + 1, x] == '&':
+            win()
         else:
             death()
     elif movement == 'left':
         if x > 0 and level_map[y, x - 1] == '.':
             hero.move(x - 1, y)
+        elif x > 0 and level_map[y, x - 1] == '&':
+            win()
         else:
             death()
     elif movement == 'right':
         if x < level_x and level_map[y, x + 1] == '.':
             hero.move(x + 1, y)
+        elif x < level_x and level_map[y, x + 1] == '&':
+            win()
         else:
             death()
-
 # Недоделано :(
 
+
 def move_car(mas):
-    x, y = mas.pos
-    if (x < level_x and level_map[y, x + 1] == '.') or (x < level_x and level_map[y, x + 1] == ','):
-        mas.move(x + 1, y)
-    elif x < level_x and level_map[y, x + 1] == '0' or x >= level_x:
-        mas.move(0, y)
+    print(level_x)
+    x, y = mas.abs_pos
+    x //= 50
+    y //= 50
+    if (x > 0 and level_map[y, x - 1] == '.') or (x > 0 and level_map[y, x - 1] == ','):
+        mas.move(x - 1, y)
+        print(x, y)
+    elif x > 0 and level_map[y, x - 1] == '0':
+        pass
+    elif (x == 0 and level_map[y, 22] == '.') or (x == 0 and level_map[y, 22] == ','):
+        mas.move(22, y)
+        print(3)
+    print(4)
+
+def win():
+    screen.blit(load_image('Win.png'), (0, 0))
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                terminate()
+        pg.display.flip()
+
 
 # Функция смерти
 def death():
-    waiting = True
     screen.blit(load_image('DeadScreen.png'), (0, 0))
-    while waiting:
+    while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 terminate()
             if event.type == pg.K_SPACE:
                 terminate()
         pg.display.flip()
+
 
 # Выключение программы
 def terminate():
@@ -185,7 +228,8 @@ if __name__ == '__main__':
     tile_images = {
         'rir': load_image('water.png'),
         'road': load_image('road.png'),
-        'empty': load_image('trava.png')
+        'empty': load_image('trava.png'),
+        'nest': load_image('nest.png')
     }
 
     tile_width = tile_height = 50
@@ -216,7 +260,6 @@ if __name__ == '__main__':
     running = True
     # запустим фоновую музыку с бесконечным повторением
     pg.mixer.music.play(-1)
-
     while running:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -226,10 +269,14 @@ if __name__ == '__main__':
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     start_menu = False
+                elif start_menu:
+                    pass
                 elif event.key == pg.K_UP:
                     move_player(player, 'up')
                 elif event.key == pg.K_DOWN:
                     move_player(player, 'down')
+                    """for car in m:
+                        move_car(car)"""
                 elif event.key == pg.K_LEFT:
                     move_player(player, 'left')
                 elif event.key == pg.K_RIGHT:
@@ -253,7 +300,6 @@ if __name__ == '__main__':
                 tiles_group.draw(screen)
                 player_group.draw(screen)
                 cars_group.draw(screen)
-
+        score()
         time.Clock().tick(fps)
         pg.display.flip()
-
